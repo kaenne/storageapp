@@ -69,6 +69,8 @@ class LoginActivity : AppCompatActivity() {
             }
             else -> {
                 showToast("Login Successful")
+                startActivity(Intent(this, MainActivity::class.java))
+                finish()
             }
         }
     }

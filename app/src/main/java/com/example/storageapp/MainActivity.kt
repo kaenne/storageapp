@@ -1,19 +1,16 @@
 package com.example.storageapp
 
-import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Bundle
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
-import java.util.Date
+import java.text.SimpleDateFormat
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -21,118 +18,95 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvData: TextView
     private lateinit var btnWriteFile: Button
     private lateinit var btnReadFile: Button
-
-    // Constants
-    companion object {
-        private const val REQUEST_CODE_WRITE_PERM = 401
-        private const val FILENAME = "storage_app_data.txt"
-    }
+    private lateinit var btnLogout: Button
+    private lateinit var currentUsername: String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        // Получаем имя пользователя из Intent (исправлено на "USERNAME")
+        currentUsername = intent.getStringExtra("USERNAME") ?: "default_user"
+
         initViews()
         setupButtons()
-        requestStoragePermission()
-        val btnLogout: Button = findViewById(R.id.btnLogout)
-        btnLogout.setOnClickListener {
-            val intent = Intent(this, LoginActivity::class.java)
-
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-
-            startActivity(intent)
-            finish()
-        }
     }
 
     private fun initViews() {
         tvData = findViewById(R.id.tvData)
         btnWriteFile = findViewById(R.id.btnWriteFile)
         btnReadFile = findViewById(R.id.btnReadFile)
+        btnLogout = findViewById(R.id.btnLogout)
     }
 
     private fun setupButtons() {
         btnWriteFile.setOnClickListener {
-            val currentData = "App data: ${Date(System.currentTimeMillis())}"
-            writeToFile(currentData)
+            val currentData = "User: $currentUsername\nLast update: ${getCurrentDateTime()}\nHello!\n"
+            appendToFile(currentData)  // Теперь данные дописываются в файл
         }
 
         btnReadFile.setOnClickListener {
             tvData.text = readFromFile()
         }
-    }
 
-    private fun requestStoragePermission() {
-        when {
-            ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
-            ) == PackageManager.PERMISSION_GRANTED -> {
-                // Permission already granted
-            }
-            ActivityCompat.shouldShowRequestPermissionRationale(
-                this,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
-            ) -> {
-                Toast.makeText(this, "Storage permission is needed to save files", Toast.LENGTH_LONG).show()
-                requestPermission()
-            }
-            else -> requestPermission()
+        btnLogout.setOnClickListener {
+            logoutUser()
         }
     }
 
-    private fun requestPermission() {
-        ActivityCompat.requestPermissions(
-            this,
-            arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
-            REQUEST_CODE_WRITE_PERM
-        )
+    private fun getCurrentDateTime(): String {
+        val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale.getDefault())
+        return sdf.format(Date())
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        when (requestCode) {
-            REQUEST_CODE_WRITE_PERM -> {
-                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Toast.makeText(this, "Permission granted", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show()
-                }
-            }
+    private fun getUserFile(): File {
+        val userFilesDir = File(filesDir, "user_files")
+        if (!userFilesDir.exists()) {
+            userFilesDir.mkdirs()
         }
+        return File(userFilesDir, "${currentUsername}_data.txt")
     }
 
-    private fun writeToFile(data: String) {
+    private fun appendToFile(data: String) {
+        val file = getUserFile()
         try {
-            val file = File(getExternalFilesDir(null), FILENAME)
-            FileOutputStream(file).use { stream ->
+            FileOutputStream(file, true).use { stream ->  // true = дописывание в файл
                 stream.write(data.toByteArray())
-                Toast.makeText(this, "Data saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
+                showToast("Data saved for $currentUsername")
             }
         } catch (e: Exception) {
-            Toast.makeText(this, "Error saving file: ${e.message}", Toast.LENGTH_SHORT).show()
+            showToast("Error saving file")
             e.printStackTrace()
         }
     }
 
     private fun readFromFile(): String {
+        val file = getUserFile()
         return try {
-            val file = File(getExternalFilesDir(null), FILENAME)
-            if (!file.exists()) return "No data file found"
+            if (!file.exists()) return "No data available for $currentUsername"
 
             FileInputStream(file).use { stream ->
-                val bytes = ByteArray(file.length().toInt())
-                stream.read(bytes)
-                String(bytes)
+                String(stream.readBytes())
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            "Error reading file: ${e.message}"
+            "Error reading file for $currentUsername"
         }
+    }
+
+    private fun logoutUser() {
+        getSharedPreferences("AppPrefs", MODE_PRIVATE).edit()
+            .putBoolean("is_logged_in", false)
+            .apply()
+
+        val intent = Intent(this, LoginActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        startActivity(intent)
+        finish()
+    }
+
+    private fun showToast(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 }

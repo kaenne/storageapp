@@ -8,8 +8,10 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import com.google.android.material.textfield.TextInputLayout
+import org.json.JSONArray
+import org.json.JSONObject
+import java.security.MessageDigest
 
 class SignUpActivity : AppCompatActivity() {
 
@@ -22,6 +24,7 @@ class SignUpActivity : AppCompatActivity() {
 
     companion object {
         private const val CREDENTIAL_SHARED_PREF = "our_shared_pref"
+        private const val USERS_LIST_KEY = "users_list"
         private const val KEY_USERNAME = "Username"
         private const val KEY_PASSWORD = "Password"
         private const val MIN_PASSWORD_LENGTH = 6
@@ -123,14 +126,41 @@ class SignUpActivity : AppCompatActivity() {
         val username = edUsername.text.toString().trim()
         val password = edPassword.text.toString()
 
-        getSharedPreferences(CREDENTIAL_SHARED_PREF, Context.MODE_PRIVATE).edit().apply {
-            putString(KEY_USERNAME, username)
-            putString(KEY_PASSWORD, password)
-            apply()
+        val sharedPreferences = getSharedPreferences(CREDENTIAL_SHARED_PREF, Context.MODE_PRIVATE)
+        val usersJson = sharedPreferences.getString(USERS_LIST_KEY, "[]") ?: "[]"
+        val usersList = JSONArray(usersJson)
+
+        // Проверяем, есть ли уже такой пользователь
+        for (i in 0 until usersList.length()) {
+            val userObj = usersList.getJSONObject(i)
+            if (userObj.getString(KEY_USERNAME) == username) {
+                showToast("Username already exists")
+                return
+            }
         }
+
+        // Хешируем пароль перед сохранением
+        val hashedPassword = hashPassword(password)
+
+        // Добавляем нового пользователя
+        val newUser = JSONObject().apply {
+            put(KEY_USERNAME, username)
+            put(KEY_PASSWORD, hashedPassword)
+        }
+        usersList.put(newUser)
+
+        // Сохраняем обновленный список пользователей
+        sharedPreferences.edit().putString(USERS_LIST_KEY, usersList.toString()).apply()
 
         showToast("Account created successfully")
         finish()
+    }
+
+    private fun hashPassword(password: String): String {
+        val bytes = password.toByteArray()
+        val md = MessageDigest.getInstance("SHA-256")
+        val digest = md.digest(bytes)
+        return digest.fold("") { str, it -> str + "%02x".format(it) }
     }
 
     private fun showToast(message: String) {

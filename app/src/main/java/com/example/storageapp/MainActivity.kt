@@ -25,7 +25,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        // Получаем имя пользователя из Intent (исправлено на "USERNAME")
         currentUsername = intent.getStringExtra("USERNAME") ?: "default_user"
 
         initViews()
@@ -42,7 +41,7 @@ class MainActivity : AppCompatActivity() {
     private fun setupButtons() {
         btnWriteFile.setOnClickListener {
             val currentData = "User: $currentUsername\nLast update: ${getCurrentDateTime()}\nHello!\n"
-            appendToFile(currentData)  // Теперь данные дописываются в файл
+            updateFile(currentData) // Обновляем файл
         }
 
         btnReadFile.setOnClickListener {
@@ -67,12 +66,12 @@ class MainActivity : AppCompatActivity() {
         return File(userFilesDir, "${currentUsername}_data.txt")
     }
 
-    private fun appendToFile(data: String) {
+    private fun updateFile(data: String) {
         val file = getUserFile()
         try {
-            FileOutputStream(file, true).use { stream ->  // true = дописывание в файл
+            FileOutputStream(file).use { stream ->  // Здесь используется только FileOutputStream
                 stream.write(data.toByteArray())
-                showToast("Data saved for $currentUsername")
+                showToast("Data updated for $currentUsername")
             }
         } catch (e: Exception) {
             showToast("Error saving file")

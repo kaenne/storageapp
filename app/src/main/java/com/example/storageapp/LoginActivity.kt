@@ -3,12 +3,15 @@ package com.example.storageapp
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
+import android.widget.Spinner
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import org.json.JSONArray
-import java.security.MessageDigest
 
 class LoginActivity : AppCompatActivity() {
     // Views
@@ -16,6 +19,7 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var edPassword: EditText
     private lateinit var btnLogin: Button
     private lateinit var btnSignUp: Button
+    private lateinit var spinnerUsers: Spinner // Добавляем Spinner для выбора пользователя
 
     // Constants
     companion object {
@@ -30,6 +34,7 @@ class LoginActivity : AppCompatActivity() {
         setContentView(R.layout.activity_login)
 
         initViews()
+        loadUsernames() // Загружаем пользователей в Spinner
         setupListeners()
     }
 
@@ -38,6 +43,48 @@ class LoginActivity : AppCompatActivity() {
         edPassword = findViewById(R.id.ed_password)
         btnLogin = findViewById(R.id.btn_login)
         btnSignUp = findViewById(R.id.btn_signup)
+        spinnerUsers = findViewById(R.id.spinner_users) // Инициализируем Spinner
+    }
+
+    private fun loadUsernames() {
+        val credentials = getSharedPreferences(CREDENTIAL_SHARED_PREF, Context.MODE_PRIVATE)
+        val usersJson = credentials.getString(USERS_LIST_KEY, "[]") ?: "[]"
+        val usersList = JSONArray(usersJson)
+
+        val usernames = mutableListOf<String>()
+
+        for (i in 0 until usersList.length()) {
+            val userObj = usersList.getJSONObject(i)
+            val username = userObj.getString(KEY_USERNAME)
+            usernames.add(username)
+        }
+
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, usernames)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerUsers.adapter = adapter
+
+        spinnerUsers.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View, position: Int, id: Long) {
+                edUsername.setText(usernames[position])
+                edPassword.setText(getPasswordForUser(usernames[position]))
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>) {}
+        }
+    }
+
+    private fun getPasswordForUser(username: String): String {
+        val credentials = getSharedPreferences(CREDENTIAL_SHARED_PREF, Context.MODE_PRIVATE)
+        val usersJson = credentials.getString(USERS_LIST_KEY, "[]") ?: "[]"
+        val usersList = JSONArray(usersJson)
+
+        for (i in 0 until usersList.length()) {
+            val userObj = usersList.getJSONObject(i)
+            if (userObj.getString(KEY_USERNAME) == username) {
+                return userObj.getString(KEY_PASSWORD) // Возвращаем открытый пароль
+            }
+        }
+        return "" // Возвращаем пустую строку, если пользователя не найдено
     }
 
     private fun setupListeners() {
@@ -71,7 +118,7 @@ class LoginActivity : AppCompatActivity() {
             val savedPassword = userObj.getString(KEY_PASSWORD)
 
             if (savedUsername.equals(inputUsername, ignoreCase = true) &&
-                isPasswordValid(savedPassword, inputPassword)) {
+                savedPassword == inputPassword) {
 
                 loginSuccess = true
                 break
@@ -89,17 +136,6 @@ class LoginActivity : AppCompatActivity() {
         } else {
             showToast("Invalid username or password")
         }
-    }
-
-    private fun isPasswordValid(savedPassword: String, inputPassword: String): Boolean {
-        return hashPassword(inputPassword) == savedPassword
-    }
-
-    private fun hashPassword(password: String): String {
-        val bytes = password.toByteArray()
-        val md = MessageDigest.getInstance("SHA-256")
-        val digest = md.digest(bytes)
-        return digest.fold("") { str, it -> str + "%02x".format(it) }
     }
 
     private fun showToast(message: String) {

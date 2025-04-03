@@ -1,32 +1,64 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp">
 
-    <EditText
-        android:id="@+id/ed_username"
+    <!-- Username Field -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/til_username"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Username"/>
+        app:errorEnabled="true"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
-    <EditText
-        android:id="@+id/ed_password"
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/ed_username"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Username"
+            android:inputType="textCapWords"
+            android:maxLines="1"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Password Field -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/til_password"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Password"
-        android:inputType="textPassword"/>
+        app:errorEnabled="true"
+        app:passwordToggleEnabled="true"
+        app:passwordToggleTint="@color/design_default_color_primary"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/ed_password"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Password"
+            android:inputType="textPassword"
+            android:maxLines="1"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Login Button -->
     <Button
         android:id="@+id/btn_login"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Login"/>
+        android:layout_marginTop="16dp"
+        android:text="Login"
+        android:backgroundTint="@color/design_default_color_primary"
+        android:textColor="@android:color/white"/>
 
+    <!-- Sign Up Button -->
     <Button
         android:id="@+id/btn_signup"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Sign Up"/>
+        android:layout_marginTop="8dp"
+        android:text="Create Account"
+        style="@style/Widget.MaterialComponents.Button.TextButton"
+        android:textColor="@color/design_default_color_primary"/>
 </LinearLayout>

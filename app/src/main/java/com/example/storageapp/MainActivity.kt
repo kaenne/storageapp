@@ -1,6 +1,7 @@
 package com.example.storageapp
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.widget.Button
@@ -34,6 +35,15 @@ class MainActivity : AppCompatActivity() {
         initViews()
         setupButtons()
         requestStoragePermission()
+        val btnLogout: Button = findViewById(R.id.btnLogout)
+        btnLogout.setOnClickListener {
+            val intent = Intent(this, LoginActivity::class.java)
+
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+
+            startActivity(intent)
+            finish()
+        }
     }
 
     private fun initViews() {
